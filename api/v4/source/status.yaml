@@ -146,7 +146,7 @@
                   description: Duration of custom status, can be `thirty_minutes`, `one_hour`, `four_hours`, `today`, `this_week` or `date_and_time`
                 expires_at:
                   type: string
-                  description: The time at which custom status should be expired. It should be in ISO format.
+                  description: The time at which custom status should be expired. It should be in ISO format. Required when `duration` is `date_and_time`. For the other durations it can be omitted, and the server calculates it from `duration` using the user's timezone.
         description: Custom status object that is to be updated
         required: true
       responses:
