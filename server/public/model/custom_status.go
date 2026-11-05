@@ -50,11 +50,52 @@ func (cs *CustomStatus) AreDurationAndExpirationTimeValid() bool {
 		return true
 	}
 
+	// The expiration time can be omitted for durations it can be calculated
+	// from. See SetExpiresAtFromDuration.
+	if cs.ExpiresAt.IsZero() && cs.Duration != "date_and_time" && validCustomStatusDuration[cs.Duration] {
+		return true
+	}
+
 	if validCustomStatusDuration[cs.Duration] && !cs.ExpiresAt.Before(time.Now()) {
 		return true
 	}
 
 	return false
+}
+
+// SetExpiresAtFromDuration sets ExpiresAt from Duration when ExpiresAt is not
+// set, so that API clients can send only a duration. now is the current time
+// and loc is the user's timezone, which is used for "today" and "this_week".
+// The calculation matches the one done by the web app when a status is set.
+func (cs *CustomStatus) SetExpiresAtFromDuration(now time.Time, loc *time.Location) {
+	if !cs.ExpiresAt.IsZero() {
+		return
+	}
+	if loc == nil {
+		loc = time.UTC
+	}
+
+	switch cs.Duration {
+	case "thirty_minutes":
+		cs.ExpiresAt = now.Add(30 * time.Minute).Truncate(time.Minute)
+	case "one_hour":
+		cs.ExpiresAt = now.Add(time.Hour).Truncate(time.Minute)
+	case "four_hours":
+		cs.ExpiresAt = now.Add(4 * time.Hour).Truncate(time.Minute)
+	case "today":
+		// Midnight at the start of the next day in the user's timezone.
+		local := now.In(loc)
+		cs.ExpiresAt = time.Date(local.Year(), local.Month(), local.Day()+1, 0, 0, 0, 0, loc)
+	case "this_week":
+		// The last millisecond of Saturday in the user's timezone, which is
+		// the end of the week as calculated by the web app.
+		local := now.In(loc)
+		daysUntilSaturday := int(time.Saturday - local.Weekday())
+		cs.ExpiresAt = time.Date(local.Year(), local.Month(), local.Day()+daysUntilSaturday+1, 0, 0, 0, 0, loc).Add(-time.Millisecond)
+	}
+
+	// Store the time in UTC, like the web app does.
+	cs.ExpiresAt = cs.ExpiresAt.UTC()
 }
 
 func RuneToHexadecimalString(r rune) string {
