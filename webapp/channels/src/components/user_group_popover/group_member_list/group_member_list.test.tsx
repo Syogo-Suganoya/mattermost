@@ -9,7 +9,7 @@ import type {UserProfile} from '@mattermost/types/users';
 import {General} from 'mattermost-redux/constants';
 import {displayUsername} from 'mattermost-redux/utils/user_utils';
 
-import {renderWithContext, userEvent} from 'tests/react_testing_utils';
+import {renderWithContext, screen, userEvent} from 'tests/react_testing_utils';
 import {TestHelper} from 'utils/test_helper';
 
 import GroupMemberList from './group_member_list';
@@ -129,5 +129,28 @@ describe('component/user_group_popover/group_member_list', () => {
         }
         expect(baseProps.showUserOverlay).toHaveBeenCalledTimes(0);
         expect(baseProps.hide).toHaveBeenCalledTimes(0);
+    });
+
+    test('should keep the user popover open when the list re-renders', async () => {
+        const {rerender} = renderWithContext(
+            <GroupMemberList
+                {...baseProps}
+            />,
+            initialState as any,
+        );
+
+        await userEvent.click(screen.getByText(members[0].displayName));
+        expect(await screen.findByRole('dialog')).toBeInTheDocument();
+
+        // A parent re-render, such as the one caused by the popover loading the user's data,
+        // must not remount the list items and close the popover that was just opened
+        rerender(
+            <GroupMemberList
+                {...baseProps}
+                members={[...members]}
+            />,
+        );
+
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 });
