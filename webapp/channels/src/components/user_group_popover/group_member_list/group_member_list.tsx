@@ -81,6 +81,91 @@ export type Props = {
     };
 };
 
+type ItemData = {
+    members: GroupMember[];
+    memberCount: number;
+    isUserLoaded: (index: number) => boolean;
+    showDirectChannel: (user: UserProfile) => void;
+};
+
+// Item is defined outside GroupMemberList and receives its data through itemData so that it keeps
+// the same component type between renders. Otherwise, every re-render of the list would remount
+// all the items and close a profile popover that was just opened from one of them.
+const Item = ({index, style, data}: ListChildComponentProps<ItemData>) => {
+    const {members, memberCount, isUserLoaded, showDirectChannel} = data;
+    const {formatMessage} = useIntl();
+    const status = useSelector((state: GlobalState) => getStatusForUserId(state, members[index]?.user?.id) || UserStatuses.OFFLINE);
+
+    // Remove explicit height provided by VariableSizeList
+    style.height = undefined;
+
+    if (isUserLoaded(index)) {
+        const user = members[index].user;
+        const name = members[index].displayName;
+
+        return (
+            <UserListItem
+                className='group-member-list_item'
+                first={index === 0}
+                last={index === memberCount - 1}
+                style={style}
+                key={user.id}
+                role='listitem'
+            >
+                <ProfilePopover
+                    userId={user.id}
+                    src={Utils.imageURLForUser(user?.id ?? '')}
+                    hideStatus={user.is_bot}
+                >
+                    <UserButton>
+                        <span className='status-wrapper'>
+                            <Avatar
+                                username={user.username}
+                                size={'sm'}
+                                url={Utils.imageURLForUser(user?.id ?? '')}
+                                className={'avatar-post-preview'}
+                                tabIndex={-1}
+                            />
+                            <StatusIcon
+                                status={status}
+                            />
+                        </span>
+                        <Username className='overflow--ellipsis text-nowrap'>{name}</Username>
+                        <Gap className='group-member-list_gap'/>
+                    </UserButton>
+                </ProfilePopover>
+                <DMContainer className='group-member-list_dm-button'>
+                    <WithTooltip
+                        title={formatMessage({id: 'group_member_list.sendMessageTooltip', defaultMessage: 'Send message'})}
+                    >
+                        <DMButton
+                            className='btn btn-icon btn-xs'
+                            aria-label={formatMessage(
+                                {id: 'group_member_list.sendMessageButton', defaultMessage: 'Send message to {user}'},
+                                {user: name})}
+                            onClick={() => showDirectChannel(user)}
+                        >
+                            <i
+                                className='icon icon-send'
+                            />
+                        </DMButton>
+                    </WithTooltip>
+                </DMContainer>
+            </UserListItem>
+        );
+    }
+
+    return (
+        <LoadingItem
+            style={style}
+            first={index === 0}
+            last={index === members.length}
+        >
+            <LoadingSpinner/>
+        </LoadingItem>
+    );
+};
+
 const GroupMemberList = (props: Props) => {
     const {
         group,
@@ -93,8 +178,6 @@ const GroupMemberList = (props: Props) => {
     } = props;
 
     const history = useHistory();
-
-    const {formatMessage} = useIntl();
 
     const [nextPage, setNextPage] = useState(Math.floor(members.length / USERS_PER_PAGE));
     const [nextPageLoadState, setNextPageLoadState] = useState(Load.DONE);
@@ -154,77 +237,11 @@ const GroupMemberList = (props: Props) => {
         return isSearching || !hasNextPage || index < members.length;
     };
 
-    const Item = ({index, style}: ListChildComponentProps) => {
-        const status = useSelector((state: GlobalState) => getStatusForUserId(state, members[index]?.user?.id) || UserStatuses.OFFLINE);
-
-        // Remove explicit height provided by VariableSizeList
-        style.height = undefined;
-
-        if (isUserLoaded(index)) {
-            const user = members[index].user;
-            const name = members[index].displayName;
-
-            return (
-                <UserListItem
-                    className='group-member-list_item'
-                    first={index === 0}
-                    last={index === group.member_count - 1}
-                    style={style}
-                    key={user.id}
-                    role='listitem'
-                >
-                    <ProfilePopover
-                        userId={user.id}
-                        src={Utils.imageURLForUser(user?.id ?? '')}
-                        hideStatus={user.is_bot}
-                    >
-                        <UserButton>
-                            <span className='status-wrapper'>
-                                <Avatar
-                                    username={user.username}
-                                    size={'sm'}
-                                    url={Utils.imageURLForUser(user?.id ?? '')}
-                                    className={'avatar-post-preview'}
-                                    tabIndex={-1}
-                                />
-                                <StatusIcon
-                                    status={status}
-                                />
-                            </span>
-                            <Username className='overflow--ellipsis text-nowrap'>{name}</Username>
-                            <Gap className='group-member-list_gap'/>
-                        </UserButton>
-                    </ProfilePopover>
-                    <DMContainer className='group-member-list_dm-button'>
-                        <WithTooltip
-                            title={formatMessage({id: 'group_member_list.sendMessageTooltip', defaultMessage: 'Send message'})}
-                        >
-                            <DMButton
-                                className='btn btn-icon btn-xs'
-                                aria-label={formatMessage(
-                                    {id: 'group_member_list.sendMessageButton', defaultMessage: 'Send message to {user}'},
-                                    {user: name})}
-                                onClick={() => showDirectChannel(user)}
-                            >
-                                <i
-                                    className='icon icon-send'
-                                />
-                            </DMButton>
-                        </WithTooltip>
-                    </DMContainer>
-                </UserListItem>
-            );
-        }
-
-        return (
-            <LoadingItem
-                style={style}
-                first={index === 0}
-                last={index === members.length}
-            >
-                <LoadingSpinner/>
-            </LoadingItem>
-        );
+    const itemData: ItemData = {
+        members,
+        memberCount: group.member_count,
+        isUserLoaded,
+        showDirectChannel,
     };
 
     const renderContent = () => {
@@ -287,6 +304,7 @@ const GroupMemberList = (props: Props) => {
                     {({onItemsRendered, ref}) => (
                         <VariableSizeList
                             itemCount={itemCount}
+                            itemData={itemData}
                             onItemsRendered={onItemsRendered}
                             ref={ref}
                             itemSize={(index) => getItemHeight(index === 0 || index === group.member_count - 1 || index === members.length + 1)}
