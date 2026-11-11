@@ -25095,6 +25095,14 @@
     "defaultMessage": "Add Incoming Webhook",
     "description": "Button on the Incoming Webhooks list page that opens the form to create a new incoming webhook."
   },
+  "installed_incoming_webhooks.channel": {
+    "defaultMessage": "Channel: {channel}",
+    "description": "Row in each item of the Incoming Webhooks list showing the channel the webhook posts to; {channel} is that channel's display name, or \"N/A\" when it is not available."
+  },
+  "installed_incoming_webhooks.channel.unknown": {
+    "defaultMessage": "N/A",
+    "description": "Shown as the channel in the Incoming Webhooks list when the webhook's channel is not available, such as a private channel the viewer isn't a member of."
+  },
   "installed_incoming_webhooks.delete.confirm": {
     "defaultMessage": "This action permanently deletes the incoming webhook and breaks any integrations using it. Are you sure you want to delete it?",
     "description": "Confirmation message in the modal shown before deleting an incoming webhook."
@@ -25126,6 +25134,10 @@
   "installed_incoming_webhooks.search": {
     "defaultMessage": "Search Incoming Webhooks",
     "description": "Placeholder text of the search box on the Incoming Webhooks list page."
+  },
+  "installed_incoming_webhooks.search.hint": {
+    "defaultMessage": "Search by webhook title or associated channel. Examples: \"My Webhook Title\", \"town-square\", or \"Town Square\".",
+    "description": "Hint below the search box on the Incoming Webhooks list page explaining what the search matches."
   },
   "installed_incoming_webhooks.unknown_channel": {
     "defaultMessage": "A Private Webhook",

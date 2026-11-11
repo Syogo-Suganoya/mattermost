@@ -22,6 +22,7 @@ type Props = {
     addButtonId?: string;
     emptyText?: ReactNode;
     emptyTextSearch?: JSX.Element;
+    searchHintText?: ReactNode;
     helpText?: ReactNode;
     error?: ReactNode;
     loading: boolean;
@@ -165,6 +166,11 @@ const BackstageList = (remainingProps: Props) => {
                     />
                 </div>
             </div>
+            {remainingProps.searchHintText && (
+                <span className='backstage-list__search-hint'>
+                    {remainingProps.searchHintText}
+                </span>
+            )}
             <span className='backstage-list__help'>
                 {remainingProps.helpText}
             </span>

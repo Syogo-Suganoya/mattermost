@@ -92,6 +92,15 @@ exports[`components/integrations/InstalledIncomingWebhook should match snapshot 
         class="item-details__row"
       >
         <span
+          class="item-details__channel"
+        >
+          Channel: name
+        </span>
+      </div>
+      <div
+        class="item-details__row"
+      >
+        <span
           class="item-details__creation"
         >
           Created by creator on Friday, August 11, 2017

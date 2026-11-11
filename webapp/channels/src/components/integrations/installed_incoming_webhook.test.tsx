@@ -6,7 +6,7 @@ import React from 'react';
 
 import type {IncomingWebhook} from '@mattermost/types/integrations';
 
-import InstalledIncomingWebhook from 'components/integrations/installed_incoming_webhook';
+import InstalledIncomingWebhook, {matchesFilter} from 'components/integrations/installed_incoming_webhook';
 
 import {renderWithContext} from 'tests/react_testing_utils';
 
@@ -183,5 +183,46 @@ describe('components/integrations/InstalledIncomingWebhook', () => {
 
         expect(screen.getByText(/Last used on/i)).toBeInTheDocument();
         expect(screen.queryByText('Never used')).not.toBeInTheDocument();
+    });
+    test('should show the display name of the channel the webhook posts to', () => {
+        renderWithContext(
+            <InstalledIncomingWebhook
+                {...baseProps}
+                channel={{...baseProps.channel, display_name: 'Town Square'}}
+                canChange={false}
+            />,
+            initialState,
+        );
+
+        expect(screen.getByText('Channel: Town Square')).toBeInTheDocument();
+    });
+
+    test('should show N/A as the channel when the channel is not available', () => {
+        renderWithContext(
+            <InstalledIncomingWebhook
+                {...baseProps}
+                channel={undefined}
+                canChange={false}
+            />,
+            initialState,
+        );
+
+        expect(screen.getByText('Channel: N/A')).toBeInTheDocument();
+    });
+
+    describe('matchesFilter', () => {
+        const channel = {...baseProps.channel, name: 'town-square', display_name: 'Town Square'};
+
+        test('should match the channel name', () => {
+            expect(matchesFilter(incomingWebhook, channel, 'town-sq')).toBe(true);
+        });
+
+        test('should match the channel display name', () => {
+            expect(matchesFilter(incomingWebhook, channel, 'town squ')).toBe(true);
+        });
+
+        test('should not match a channel that is not available', () => {
+            expect(matchesFilter(incomingWebhook, undefined, 'town squ')).toBe(false);
+        });
     });
 });
