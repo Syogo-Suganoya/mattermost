@@ -160,6 +160,12 @@ export default class InstalledIncomingWebhooks extends React.PureComponent<Props
                         }}
                     />
                 }
+                searchHintText={
+                    <FormattedMessage
+                        id='installed_incoming_webhooks.search.hint'
+                        defaultMessage='Search by webhook title or associated channel. Examples: "My Webhook Title", "town-square", or "Town Square".'
+                    />
+                }
                 helpText={
                     <FormattedMessage
                         id='installed_incoming_webhooks.help'

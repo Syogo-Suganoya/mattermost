@@ -15,7 +15,7 @@ import {getSiteURL} from 'utils/url';
 
 import DeleteIntegrationLink from './delete_integration_link';
 
-export function matchesFilter(incomingWebhook: IncomingWebhook, channel: Channel, filter: string) {
+export function matchesFilter(incomingWebhook: IncomingWebhook, channel: Channel | undefined, filter: string) {
     if (!filter) {
         return true;
     }
@@ -25,8 +25,8 @@ export function matchesFilter(incomingWebhook: IncomingWebhook, channel: Channel
         return true;
     }
 
-    if (incomingWebhook.channel_id) {
-        if (channel && channel.name.toLowerCase().indexOf(filter) !== -1) {
+    if (incomingWebhook.channel_id && channel) {
+        if (channel.name.toLowerCase().includes(filter) || channel.display_name.toLowerCase().includes(filter)) {
             return true;
         }
     }
@@ -69,9 +69,11 @@ type Props = {
     team: Team;
 
     /**
-     *  Data used for filtering of webhook based on filter prop
+     *  Data used for filtering of webhook based on filter prop. It is undefined when the
+     *  webhook posts to a channel that is not loaded, such as a private channel the user
+     *  isn't a member of.
      */
-    channel: Channel;
+    channel?: Channel;
 };
 
 export default class InstalledIncomingWebhook extends React.PureComponent<Props> {
@@ -139,6 +141,18 @@ export default class InstalledIncomingWebhook extends React.PureComponent<Props>
 
         const incomingWebhookId = getSiteURL() + '/hooks/' + incomingWebhook.id;
 
+        let channelName;
+        if (channel) {
+            channelName = channel.display_name;
+        } else {
+            channelName = (
+                <FormattedMessage
+                    id='installed_incoming_webhooks.channel.unknown'
+                    defaultMessage='N/A'
+                />
+            );
+        }
+
         return (
             <div className='backstage-list__item'>
                 <div className='item-details'>
@@ -167,6 +181,17 @@ export default class InstalledIncomingWebhook extends React.PureComponent<Props>
                                     value={incomingWebhookId}
                                 />
                             </span>
+                        </span>
+                    </div>
+                    <div className='item-details__row'>
+                        <span className='item-details__channel'>
+                            <FormattedMessage
+                                id='installed_incoming_webhooks.channel'
+                                defaultMessage='Channel: {channel}'
+                                values={{
+                                    channel: channelName,
+                                }}
+                            />
                         </span>
                     </div>
                     <div className='item-details__row'>

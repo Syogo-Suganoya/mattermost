@@ -2,6 +2,7 @@
 // See LICENSE.txt for license information.
 
 import {screen, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
 
 import type {IncomingWebhook} from '@mattermost/types/integrations';
@@ -150,5 +151,47 @@ describe('components/integrations/InstalledIncomingWebhooks', () => {
         // Verify DOM order: Town Square (channel fallback) should appear before Zeta Webhook
         const position = townSquareEl.compareDocumentPosition(zetaEl);
         expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+    test('shows a hint about what the search matches', async () => {
+        renderWithContext(
+            <InstalledIncomingWebhooks
+                {...defaultProps}
+            />,
+            initialState,
+        );
+
+        expect(await screen.findByText('Search by webhook title or associated channel. Examples: "My Webhook Title", "town-square", or "Town Square".')).toBeInTheDocument();
+    });
+
+    test('finds webhooks by the display name of their channel', async () => {
+        const otherChannel = TestHelper.getChannelMock({
+            id: 'otherChannelId',
+            name: 'off-topic',
+            display_name: 'Off-Topic',
+        });
+        const hookOffTopic = TestHelper.getIncomingWebhookMock({
+            id: 'hook-off-topic',
+            display_name: 'Delta Webhook',
+            channel_id: 'otherChannelId',
+            team_id: 'teamId',
+            user_id: 'userId',
+        });
+
+        renderWithContext(
+            <InstalledIncomingWebhooks
+                {...defaultProps}
+                incomingHooks={[hookAlpha, hookOffTopic]}
+                incomingHooksTotalCount={2}
+                channels={{channelId: channel, otherChannelId: otherChannel}}
+            />,
+            initialState,
+        );
+
+        await screen.findByText('Alpha Webhook');
+
+        await userEvent.type(screen.getByPlaceholderText('Search Incoming Webhooks'), 'Town Square');
+
+        expect(screen.getByText('Alpha Webhook')).toBeInTheDocument();
+        expect(screen.queryByText('Delta Webhook')).not.toBeInTheDocument();
     });
 });
