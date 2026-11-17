@@ -6,6 +6,7 @@ package app
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
@@ -97,6 +98,8 @@ func (a *App) SetCustomStatus(rctx request.CTX, userID string, cs *model.CustomS
 	if err != nil {
 		return err
 	}
+
+	cs.SetExpiresAtFromDuration(time.Now(), user.GetTimezoneLocation())
 
 	if err := user.SetCustomStatus(cs); err != nil {
 		rctx.Logger().Error("Failed to set custom status", mlog.String("user_id", userID), mlog.Err(err))

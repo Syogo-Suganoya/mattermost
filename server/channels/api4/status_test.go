@@ -411,6 +411,38 @@ func TestUpdateUserCustomStatus(t *testing.T) {
 		assert.WithinDuration(t, expiresAt, customStatus.ExpiresAt, 5*time.Second)
 	})
 
+	t.Run("update custom status with a duration but no expiration time", func(t *testing.T) {
+		toUpdateCustomStatus := &model.CustomStatus{
+			Emoji:    "calendar",
+			Text:     "In a meeting",
+			Duration: "one_hour",
+		}
+		before := time.Now()
+		_, resp, err := client.UpdateUserCustomStatus(context.Background(), th.BasicUser.Id, toUpdateCustomStatus)
+		require.NoError(t, err)
+		CheckOKStatus(t, resp)
+
+		user, _, err := client.GetUser(context.Background(), th.BasicUser.Id, "")
+		require.NoError(t, err)
+		customStatus := user.GetCustomStatus()
+		require.NotNil(t, customStatus)
+		assert.Equal(t, "one_hour", customStatus.Duration)
+
+		// The server calculates the expiration time from the duration
+		assert.WithinDuration(t, before.Add(time.Hour), customStatus.ExpiresAt, time.Minute)
+	})
+
+	t.Run("attempt to set custom status with date_and_time but no expiration time", func(t *testing.T) {
+		toUpdateCustomStatus := &model.CustomStatus{
+			Emoji:    "calendar",
+			Text:     "In a meeting",
+			Duration: "date_and_time",
+		}
+		_, resp, err := client.UpdateUserCustomStatus(context.Background(), th.BasicUser.Id, toUpdateCustomStatus)
+		require.Error(t, err)
+		CheckBadRequestStatus(t, resp)
+	})
+
 	t.Run("attempt to set custom status when disabled", func(t *testing.T) {
 		th.App.UpdateConfig(func(cfg *model.Config) { *cfg.TeamSettings.EnableCustomUserStatuses = false })
 		defer th.App.UpdateConfig(func(cfg *model.Config) { *cfg.TeamSettings.EnableCustomUserStatuses = true })
